@@ -1,0 +1,6 @@
+project: rnshah9/yuv2rgb
+target: rgb2yuv
+
+cmds:
+  - cmd: /repo/build/test_yuv_rgb rgb2yuv @@ out
+    # filepath: /test.c
