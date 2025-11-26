@@ -1,0 +1,10 @@
+project: mayhemheroes/yuv2rgb
+target: rgb2yuv
+
+cmds:
+  - cmd: /repo/build/test_yuv_rgb rgb2yuv @@ /dev/null
+    env: {}
+image: ghcr.io/mayhemheroes/yuv2rgb@sha256:7babb4c5521900ee63ade5cc23ce631aaf177e561148099825b4484a7d6a29a2
+duration: 60
+testsuite:
+  - https://app.mayhem.security/mayhemheroes/yuv2rgb/rgb2yuv/testsuite.tar

@@ -1,0 +1,117 @@
+# ============================================================================
+# Single-stage Dockerfile for RLENV Patch Playground
+# Original: Dockerfile.mayhem (multi-stage build with ubuntu:20.04)
+# ============================================================================
+
+# ============================================================================
+# 1. Base Image Selection
+# ============================================================================
+FROM --platform=linux/amd64 ubuntu:20.04
+
+# ============================================================================
+# 2. System Dependencies (merge ALL stages from original Dockerfile)
+# ============================================================================
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    clang \
+    cmake \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# REQUIRED: jq is used by validate.sh to parse metadata.json
+# clang and cmake are build dependencies from original Dockerfile
+
+# ============================================================================
+# 3. Copy MTV Binary (REQUIRED - used by validate.sh)
+# ============================================================================
+COPY --from="us-east4-docker.pkg.dev/forallsecure-1/rlenv-staging/rlenv-mcp-static:latest" \
+     /rlenv/bin/mtv /rlenv/bin/mtv
+
+# MTV (Mayhem Test & Verify) is required for validation and crash triage
+
+# ============================================================================
+# 4. Language-Specific Setup
+# ============================================================================
+# C/C++ project - no special language runtime needed beyond clang/cmake
+
+# ============================================================================
+# 5. Copy Source Code (EARLY - source exists now)
+# ============================================================================
+COPY . /rlenv/source/yuv2rgb/
+
+# This copies the entire repository to /rlenv/source/yuv2rgb/
+
+# ============================================================================
+# 6. Make Source World-Writable (REQUIRED for non-root rebuilds)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# Why 777? Validation runs as UID 1000 (unprivileged user)
+# Must be able to modify source code and rebuild
+
+# ============================================================================
+# 7. Set Working Directory
+# ============================================================================
+WORKDIR /rlenv/source/yuv2rgb/
+
+# All subsequent RUN commands execute from this directory
+
+# ============================================================================
+# 8. Install Language Dependencies (if any)
+# ============================================================================
+# No additional language dependencies needed for this C/C++ project
+
+# ============================================================================
+# 9. Build Application (extract from original Dockerfile)
+# ============================================================================
+# Create build directory and run CMake build
+RUN mkdir -p build && cd build && \
+    cmake .. && \
+    make -j8
+
+# ============================================================================
+# 10. Copy Artifacts to Expected Locations (if needed)
+# ============================================================================
+# Build artifacts are already at /rlenv/source/yuv2rgb/build/test_yuv_rgb
+# Need to copy to /repo/build/test_yuv_rgb to match metadata.json
+RUN mkdir -p /repo/build && \
+    cp build/test_yuv_rgb /repo/build/test_yuv_rgb
+
+# ============================================================================
+# 11. Permission Management (REQUIRED)
+# ============================================================================
+# Target executable (rwxrw-rw-)
+RUN chmod 766 /repo/build/test_yuv_rgb
+
+# Build output directory
+RUN chmod -R 777 /repo/build 2>/dev/null || true
+
+# Source build directory
+RUN chmod -R 777 /rlenv/source/yuv2rgb/build 2>/dev/null || true
+
+# ============================================================================
+# 12. Copy rlenv Directory (MUST BE NEAR END - doesn't exist yet!)
+# ============================================================================
+COPY rlenv /rlenv
+
+# CRITICAL: This directory doesn't exist when you create this Dockerfile
+# It's populated later by the `rlenv patch` command
+# That's why it must come AFTER source copy and build
+
+# ============================================================================
+# 13. Final Permission Fix (REQUIRED)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# Ensures source remains writable after rlenv directory copy
+
+# ============================================================================
+# 14. Set Entry Point
+# ============================================================================
+CMD ["/repo/build/test_yuv_rgb"]
+
+# Use the same path as in metadata.json
+
+# ============================================================================
+# 15. Reset Working Directory
+# ============================================================================
+WORKDIR /

@@ -1,0 +1,12 @@
+{
+  "workspace": "mayhemheroes",
+  "project": "yuv2rgb",
+  "target": "rgb2yuv",
+  "run_id": "5",
+  "ci_url": "https://github.com:443/mayhemheroes/yuv2rgb/actions/runs/3113363974",
+  "run_image_name": "ghcr.io/mayhemheroes/yuv2rgb:master",
+  "run_image_with_digest": "ghcr.io/mayhemheroes/yuv2rgb@sha256:7babb4c5521900ee63ade5cc23ce631aaf177e561148099825b4484a7d6a29a2",
+  "git_repo_url": "git@github.com:mayhemheroes/yuv2rgb.git",
+  "git_revision": "d290c115973183603d668594377882ae698db854",
+  "target_executable": "/repo/build/test_yuv_rgb"
+}
